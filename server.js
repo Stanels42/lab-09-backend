@@ -17,19 +17,62 @@ const PORT = process.env.PORT || 3003;
 
 //Get the location and name to be used else where
 app.get('/location', (request, response) => {
+
   const location = request.query.data;
-  // console.log(location);
-  // locationLookup(location, response);
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}&key=${process.env.GEOCODE_API_KEY}`;
-  superagent.get(url)
+  const sqlQuery = 'SELECT * FROM locations WHERE search_query = $1;';
+  const input = [location];
+
+  client.query(sqlQuery, input)
     .then(data => {
-      const city = new City(location, data.body);
-      // console.log(city);
-      response.send(city);
+
+      if(data.rows.length === 0){
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}&key=${process.env.GEOCODE_API_KEY}`;
+
+        superagent.get(url)
+          .then(data => {
+            const city = new City(location, data.body);
+            response.send(city);
+
+            let keyStr = '';
+            for (let key in city) {
+              keyStr += `${key}, `;
+            }
+
+            let storeData = [];
+            let sqlData = '';
+            let count = 1;
+            for (let value in city) {
+              storeData.push(city[value]);
+              sqlData += `$${count}, `;
+              count++;
+            }
+
+            keyStr = keyStr.slice(0 , keyStr.length - 2);
+            sqlData = sqlData.slice(0 , sqlData.length - 2);
+
+            console.log(keyStr, sqlData, storeData);
+            const writeSQL = `INSERT INTO locations (${keyStr}) VALUES ($1, $2, $3, $4) RETURNING *`;
+            console.log(writeSQL);
+            client.query(writeSQL, storeData)
+              .then(() => console.log('Wrote data'))
+              .catch(error => console.error(error));
+
+          })
+          .catch(error => {
+            console.error(error);
+            response.send(error).status(500);
+
+          });
+      } else {
+        console.log('Read Database')
+        response.json(data.rows[0]);
+
+      }
     })
-    .catch(error => {
-      response.send(error).status(500);
+    .catch( () => {
+      console.log('error');
     });
+
 });
 
 
@@ -64,7 +107,7 @@ app.get('/yelp', (request, response) => {
   superagent.get(url)
     .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
     .then(data => {
-      // console.log(data.body);
+
       response.send(data.body.businesses.map(yelp => new Yelp(yelp)));
     })
     .catch(error => {
@@ -84,7 +127,7 @@ app.get('/movies', (request, response) => {
 
   superagent.get(url)
     .then(data => {
-      console.log(data.body);
+
       response.send(data.body.results.map(movie => new Movie(movie)));
 
     })
@@ -139,8 +182,7 @@ const City = function (location, data) {
 function Forcast(day) {
 
   this.forecast = day.summary;
-  let date = new Date(day.time * 1000);
-  this.time = date.toDateString();
+  this.time = !isNaN(day.time) ? new Date(day.time * 1000).toDateString() : day.time;
 
 }
 
@@ -163,35 +205,26 @@ let Trail = function (trailData) {
 let Movie = function(movieData) {
 
   this.title = movieData.title;
-  this.overview =movieData.overview;
-  this.vote_average=movieData.vote_average;
-  this.vote_count=movieData.vote_count;
-  this.image_url=`https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
-  this.popularity=movieData.popularity;
-  this.release_date=movieData.release_date;
+  this.overview = movieData.overview;
+  this.average_votes = movieData.vote_average;
+  this.total_votes = movieData.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
+  this.popularity = movieData.popularity;
+  this.released_on = movieData.release_date;
+
 };
 
 let Yelp = function(yelpData){
-  this.name=yelpData.name;
-  this.image_url=yelpData.image_url;
-  this.price=yelpData.price;
-  this.rating=yelpData.rating;
-  this.url=yelpData.url;
+  this.name = yelpData.name;
+  this.image_url = yelpData.image_url;
+  this.price = yelpData.price;
+  this.rating = yelpData.rating;
+  this.url = yelpData.url;
 };
 
 //Check id location name is in the data base of location names return bool
-function locationLookup (locationName, response) {
-  locationName = 'seattle';
-  const sqlQuery = 'SELECT * FROM locations WHERE search_query = $1';
-  const input = [locationName];
-  client.query(sqlQuery, input)
-    .then(data => {
-      console.log(data.rows);
-      response.json(data.rows);
-    })
-    .catch( () => {
-      console.log('error');
-    });
+function queryDatabase (requestObj) {
+  
 }
 
 client.connect()
