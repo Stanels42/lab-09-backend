@@ -1,5 +1,7 @@
 'use strict';
 
+const superagent = require('superagent');
+
 let Trail = function (trailData) {
 
   this.name = trailData.name;
@@ -15,5 +17,24 @@ let Trail = function (trailData) {
   this.condition_time = trailData.conditionDate.slice(space);
 
 };
+
+function handleTrails(request, response){
+
+  const currentCity = request.query.data;
+  // console.log(process.env.TRAIL_API_KEY);
+  const url = `https://www.hikingproject.com/data/get-trails?lat=${currentCity.latitude}&lon=${currentCity.longitude}&maxDistance=10&key=${process.env.TRAIL_API_KEY}`;
+
+  superagent.get(url)
+    .then(data => {
+      response.send(data.body.trails.map(trail => new Trail(trail)));
+
+    })
+    .catch(error => {
+
+      console.error(error);
+      response.send(error).status(500);
+
+    });
+}
 
 module.exports = Trail;
