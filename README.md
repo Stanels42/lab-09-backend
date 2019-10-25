@@ -51,3 +51,16 @@ Estamation: 30min
 Start: 12:50
 End: 1:15
 Actual: 25min
+
+
+===========================================================================================
+FRIDAY
+
+Feature 1&2 Yelp and Movies
+Start: 9:10
+End: 10:30
+Actual: 1hr 20min
+
+Feature: Database
+Estamate: 1.5 hrs
+Start: 10:40
