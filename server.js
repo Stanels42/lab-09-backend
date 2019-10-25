@@ -24,6 +24,7 @@ app.get('/location', (request, response) => {
   superagent.get(url)
     .then(data => {
       const city = new City(location, data.body);
+      // console.log(city);
       response.send(city);
     })
     .catch(error => {
@@ -58,13 +59,34 @@ app.get('/weather', (request, response) => {
 app.get('/yelp', (request, response) => {
 
   const currentCity = request.query.data;
-  const url = `https://api.yelp.com/v3/businesses/search?location=${currentCity.location}`;
+  const url = `https://api.yelp.com/v3/businesses/search?location=${currentCity.search_query}`;
 
   superagent.get(url)
     .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
     .then(data => {
+      // console.log(data.body);
+      response.send(data.body.businesses.map(yelp => new Yelp(yelp)));
+    })
+    .catch(error => {
 
-      response.send(data.body);
+      console.error(error);
+      response.send(error).status(500);
+
+    });
+});
+
+//https://api.themoviedb.org/3/movie/550?api_key=27c0f494ba9df62fac1f2b1fe77b12ac
+app.get('/movies', (request, response) => {
+
+  const currentCity = request.query.data;
+  // console.log(process.env.TRAIL_API_KEY);
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&language=en-US&query=${currentCity.search_query}&page=1&include_adult=false`;
+
+  superagent.get(url)
+    .then(data => {
+      console.log(data.body);
+      response.send(data.body.results.map(movie => new Movie(movie)));
+
     })
     .catch(error => {
 
@@ -78,7 +100,7 @@ app.get('/yelp', (request, response) => {
 app.get('/trails', (request, response) => {
 
   const currentCity = request.query.data;
-  console.log(process.env.TRAILS_API_KEY);
+  // console.log(process.env.TRAIL_API_KEY);
   const url = `https://www.hikingproject.com/data/get-trails?lat=${currentCity.latitude}&lon=${currentCity.longitude}&maxDistance=10&key=${process.env.TRAIL_API_KEY}`;
 
   superagent.get(url)
@@ -122,7 +144,7 @@ function Forcast(day) {
 
 }
 
-let Trial = function (trailData) {
+let Trail = function (trailData) {
 
   this.name = trailData.name;
   this.location = trailData.location;
@@ -136,6 +158,25 @@ let Trial = function (trailData) {
   this.condition_date = trailData.conditionDate.slice(0,space);
   this.condition_time = trailData.conditionDate.slice(space);
 
+};
+
+let Movie = function(movieData) {
+
+  this.title = movieData.title;
+  this.overview =movieData.overview;
+  this.vote_average=movieData.vote_average;
+  this.vote_count=movieData.vote_count;
+  this.image_url=`https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
+  this.popularity=movieData.popularity;
+  this.release_date=movieData.release_date;
+};
+
+let Yelp = function(yelpData){
+  this.name=yelpData.name;
+  this.image_url=yelpData.image_url;
+  this.price=yelpData.price;
+  this.rating=yelpData.rating;
+  this.url=yelpData.url;
 };
 
 //Check id location name is in the data base of location names return bool
