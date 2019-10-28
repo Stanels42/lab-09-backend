@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const superagent = require('superagent');
 
 let Trail = function (trailData) {
@@ -37,4 +39,4 @@ function handleTrails(request, response){
     });
 }
 
-module.exports = Trail;
+module.exports = handleTrails;

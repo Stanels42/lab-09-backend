@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const superagent = require('superagent');
 
 let Movie = function(movieData) {
@@ -35,4 +37,4 @@ function handleMovies(request, response){
 }
 
 
-module.exports = Movie;
+module.exports = handleMovies;

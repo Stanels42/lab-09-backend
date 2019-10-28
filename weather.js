@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const superagent = require('superagent');
 
 function Forecast(day) {
@@ -31,4 +33,4 @@ function handleWeather(request, response){
 }
 
 
-module.exports = Forecast;
+module.exports = handleWeather;
