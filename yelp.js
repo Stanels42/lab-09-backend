@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const superagent = require('superagent');
 
 let Yelp = function(yelpData){
@@ -29,4 +31,4 @@ function handleYelp(request, response){
     });
 }
 
-module.exports = Yelp;
+module.exports = handleYelp;

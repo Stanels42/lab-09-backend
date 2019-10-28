@@ -1,7 +1,9 @@
 'use strict';
 
+require('dotenv').config();
+
 const superagent = require('superagent');
-const client = require('./Client');
+const client = require('./client');
 
 const City = function (location, data) {
 
@@ -22,7 +24,7 @@ function handleLocation(request, response) {
     .then(data => {
 
       if (data.rows.length === 0) {
-        handleSuperAgent(data);
+        handleSuperAgent(location, response);
 
       } else {
         console.log('Read Database');
@@ -33,48 +35,49 @@ function handleLocation(request, response) {
     .catch ( () => {
       console.log('error');
     });
-
-
-  function handleSuperAgent(data) {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}&key=${process.env.GEOCODE_API_KEY}`;
-
-    superagent.get(url)
-      .then(data => {
-        const city = new City(location, data.body);
-        response.send(city);
-        writeToDatabase(city);
-      })
-      .catch(error => {
-
-        console.error(error);
-        response.send(error).status(500);
-
-      });
-  }
-
-  function writeToDatabase (city){
-    let keyStr = '';
-    let storeData = [];
-    let sqlData = '';
-    let count = 1;
-
-    for (let value in city) {
-      keyStr += `${value}, `;
-      storeData.push(city[value]);
-      sqlData += `$${count}, `;
-      count++;
-    }
-
-    keyStr = keyStr.slice(0, keyStr.length - 2);
-    sqlData = sqlData.slice(0, sqlData.length - 2);
-
-
-    const writeSQL = `INSERT INTO locations (${keyStr}) VALUES ($1, $2, $3, $4) RETURNING *`;
-
-    client.query(writeSQL, storeData)
-      .then(() => console.log('Wrote data'))
-      .catch(error => console.error(error));
-
-  }
 }
-module.exports = City;
+
+function handleSuperAgent(location, response) {
+
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}&key=${process.env.GEOCODE_API_KEY}`;
+  superagent.get(url)
+    .then(data => {
+
+      const city = new City(location, data.body);
+      response.send(city);
+      writeToDatabase(city);
+    })
+    .catch(error => {
+
+      console.error(error);
+      response.send(error).status(500);
+
+    });
+}
+
+function writeToDatabase (city){
+  let keyStr = '';
+  let storeData = [];
+  let sqlData = '';
+  let count = 1;
+
+  for (let value in city) {
+    keyStr += `${value}, `;
+    storeData.push(city[value]);
+    sqlData += `$${count}, `;
+    count++;
+  }
+
+  keyStr = keyStr.slice(0, keyStr.length - 2);
+  sqlData = sqlData.slice(0, sqlData.length - 2);
+
+
+  const writeSQL = `INSERT INTO locations (${keyStr}) VALUES ($1, $2, $3, $4) RETURNING *`;
+
+  client.query(writeSQL, storeData)
+    .then(() => console.log('Wrote data'))
+    .catch(error => console.error(error));
+
+}
+
+module.exports = handleLocation;

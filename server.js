@@ -9,13 +9,13 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
-const client = require('./Client');
+const client = require('./client');
 
-const handleLocation = require('./handleLocation');
-const handleWeather = require('./handleWeather');
-const handleYelp = require('./handleYelp');
-const handleMovies = require('./handleMovies');
-const handleTrails = require('./handleTrails');
+const handleLocation = require('./location');
+const handleWeather = require('./weather');
+const handleYelp = require('./yelp');
+const handleMovies = require('./movie');
+const handleTrails = require('./trail');
 
 const PORT = process.env.PORT || 3003;
 
@@ -26,13 +26,18 @@ app.get('/yelp', handleYelp);
 app.get('/movies', handleMovies);
 app.get('/trails', handleTrails);
 
-
-
 //404 all unwanted extentions
-app.get('*', (request, response) => {
-  response.status(404);
-});
+app.get('*', fileNotFound);
 
+function serverError (error) {
+  console.error(error);
+  response.status(500).send('Server Error');
+}
+
+function fileNotFound (request, response) {
+  console.error('404 Bad File Path');
+  response.status(404).send('Bad File Path');
+}
 
 client.connect()
   .then( () => {
